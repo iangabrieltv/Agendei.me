@@ -486,7 +486,7 @@ const Pillars = () => {
       desc: 'Nome, serviços, preços e horários. Simples assim. Você recebe um link profissional para colocar na bio do Instagram.',
       icon: <Smartphone className="w-6 h-6 text-brand-blue" />,
       color: 'brand-blue',
-      image: 'https://i.ibb.co/MkYfBnYZ/image.png'
+      image: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=1200&q=90&auto=format&fit=crop'
     },
     {
       num: '02',
@@ -494,7 +494,7 @@ const Pillars = () => {
       desc: 'Sem precisar de você. Eles escolhem o serviço, o horário disponível e confirmam. Você só aparece na hora de trabalhar.',
       icon: <Bell className="w-6 h-6 text-brand-cyan" />,
       color: 'brand-cyan',
-      image: 'https://i.ibb.co/zV0DWVp4/image.png'
+      image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1200&q=90&auto=format&fit=crop'
     },
     {
       num: '03',
@@ -502,7 +502,7 @@ const Pillars = () => {
       desc: 'O sistema avisa o cliente via WhatsApp antes da consulta. Ele confirma com um clique — ou cancela e libera o horário para outro.',
       icon: <MessageCircle className="w-6 h-6 text-indigo-400" />,
       color: 'indigo',
-      image: 'https://i.ibb.co/Kcx9vZ3W/image.png'
+      image: 'https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=1200&q=90&auto=format&fit=crop'
     },
   ];
 
