@@ -1,0 +1,17 @@
+Aja como um desenvolvedor full-stack sênior e configure o back-end do meu Micro SaaS de barbearia no Replit, utilizando o PostgreSQL para persistência de dados e o sistema de autenticação nativo
+. O sistema deve gerenciar cinco abas principais: Dashboard, Agendamentos, Clientes, Site (Link na Bio) e Ajustes, garantindo que cada barbeiro logado visualize apenas suas próprias informações e configurações
+.
+Configure a tabela de usuários no banco de dados para incluir obrigatoriamente os campos data_criacao e status_assinatura (com os valores 'teste' ou 'pago'). Essa estrutura é fundamental para que o sistema execute uma lógica de verificação (middleware) em cada login, calculando se o período de 7 dias de teste gratuito já expirou com base na data de cadastro do usuário
+.
+Implemente a regra de bloqueio de acesso: se o usuário tiver mais de 7 dias de conta e o status_assinatura ainda for 'teste', o sistema deve redirecioná-lo automaticamente para uma tela de upgrade/pagamento do plano Pro (R$ 49,90). Enquanto estiver bloqueado, o barbeiro não deve conseguir acessar as abas internas, exceto a tela de checkout para realizar a assinatura
+.
+Para a aba 'Site' (Link na Bio), crie uma trava de funcionalidade específica para o plano gratuito: o barbeiro só poderá cadastrar e exibir no máximo 2 serviços em sua página pública. Caso ele tente adicionar um terceiro serviço na aba 'Ajustes', o sistema deve desabilitar o botão de salvar e exibir uma mensagem explicando que o limite de serviços foi atingido e que o plano de R$ 49,90 oferece serviços ilimitados
+.
+Na aba 'Dashboard' e nos Relatórios de Faturamento, restrinja o acesso total apenas para usuários com status_assinatura igual a 'pago'. Para usuários em teste, você pode exibir uma versão simplificada ou uma imagem borrada (blur) com um botão de 'Liberar Faturamento', criando um gatilho de desejo para a migração para o plano Pro
+.
+Desenvolva a aba 'Clientes' integrando um botão de ação com o ícone do WhatsApp para cada contato salvo no banco de dados. Ao ser clicado, o sistema deve gerar automaticamente um link wa.me com o número do cliente, permitindo que o barbeiro inicie uma conversa instantânea sem precisar salvar o contato manualmente no celular
+.
+Garanta que toda a interface seja 100% responsiva, adaptando-se perfeitamente tanto para desktops quanto para celulares (mobile-first). No celular, utilize um menu de navegação inferior estilo aplicativo para facilitar o polegar, enquanto no desktop as cinco abas devem ser exibidas de forma organizada em uma barra lateral ou menu superior
+.
+Finalmente, conecte o front-end ao back-end substituindo todos os dados de exemplo por chamadas reais de API, garantindo que os agendamentos feitos pelos clientes no 'Site' público caiam em tempo real na aba de 'Agendamentos' do barbeiro
+. Use o modelo GPT-4o mini para otimizar o processamento dessas funções, mantendo a eficiência e o baixo custo de créditos no Repli
