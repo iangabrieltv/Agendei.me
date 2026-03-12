@@ -41,16 +41,28 @@ import {
   CreditCard,
   Globe
 } from 'lucide-react';
-import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
+import { motion, AnimatePresence, useScroll, useTransform, useInView, useMotionValue, useSpring } from 'motion/react';
 
 const BackgroundAnimation = () => (
   <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-blue/20 rounded-full blur-[120px] animate-pulse"></div>
-    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-cyan/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
-    <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-indigo-500/10 rounded-full blur-[100px] animate-bounce" style={{ animationDuration: '10s' }}></div>
-    <div className="mesh-gradient absolute inset-0 opacity-50"></div>
+    <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-brand-blue/25 rounded-full blur-[140px] animate-pulse"></div>
+    <div className="absolute bottom-[-10%] right-[-10%] w-[45%] h-[45%] bg-brand-cyan/20 rounded-full blur-[140px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+    <div className="absolute top-[30%] right-[5%] w-[25%] h-[25%] bg-indigo-500/15 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '8s', animationDelay: '4s' }}></div>
+    <div className="absolute top-[60%] left-[15%] w-[20%] h-[20%] bg-brand-cyan/10 rounded-full blur-[80px] animate-pulse" style={{ animationDuration: '12s', animationDelay: '1s' }}></div>
+    <div className="mesh-gradient absolute inset-0 opacity-60"></div>
   </div>
 );
+
+const AnimatedCounter = ({ target, suffix = '', prefix = '' }: { target: number, suffix?: string, prefix?: string }) => {
+  const ref = React.useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true });
+  const motionVal = useMotionValue(0);
+  const spring = useSpring(motionVal, { stiffness: 60, damping: 20 });
+  const [display, setDisplay] = React.useState(0);
+  React.useEffect(() => { if (inView) motionVal.set(target); }, [inView, target]);
+  React.useEffect(() => spring.on('change', v => setDisplay(Math.floor(v))), [spring]);
+  return <span ref={ref}>{prefix}{display.toLocaleString('pt-BR')}{suffix}</span>;
+};
 
 const Navbar = ({ onLogin }: { onLogin: () => void }) => {
   const [scrolled, setScrolled] = useState(false);
@@ -63,28 +75,37 @@ const Navbar = ({ onLogin }: { onLogin: () => void }) => {
   }, []);
 
   const navLinks = [
-    { name: 'Como funciona', href: '#como-funciona' },
+    { name: 'Como Funciona', href: '#como-funciona' },
     { name: 'Preços', href: '#precos' },
+    { name: 'Depoimentos', href: '#depoimentos' },
     { name: 'FAQ', href: '#faq' },
   ];
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled || mobileMenuOpen ? 'py-4 bg-grafite/80 backdrop-blur-xl border-b border-white/10' : 'py-8 bg-transparent'}`}>
+    <motion.nav
+      initial={{ y: -20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.6 }}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled || mobileMenuOpen ? 'py-3 bg-[#050505]/90 backdrop-blur-2xl border-b border-white/[0.07] shadow-xl shadow-black/30' : 'py-6 bg-transparent'}`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3 group cursor-pointer">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-brand-blue to-brand-cyan rounded-2xl flex items-center justify-center shadow-lg shadow-brand-blue/20 group-hover:rotate-12 transition-transform">
-              <Calendar className="text-white w-6 h-6 md:w-7 md:h-7" />
+            <div className="w-9 h-9 md:w-11 md:h-11 bg-gradient-to-br from-brand-blue to-brand-cyan rounded-xl flex items-center justify-center shadow-lg shadow-brand-blue/30 group-hover:rotate-6 group-hover:scale-110 transition-all duration-300">
+              <Calendar className="text-white w-5 h-5 md:w-6 md:h-6" />
             </div>
-            <span className="text-2xl md:text-3xl font-bold font-display tracking-tighter">Agendei<span className="text-brand-blue">.me</span></span>
+            <span className="text-xl md:text-2xl font-bold font-display tracking-tighter">Agendei<span className="text-brand-blue">.me</span></span>
           </div>
           
-          <div className="hidden md:flex items-center gap-10 text-sm font-semibold uppercase tracking-widest">
+          <div className="hidden md:flex items-center gap-8 text-[11px] font-bold uppercase tracking-[0.15em]">
             {navLinks.map(link => (
-              <a key={link.name} href={link.href} className="text-white/70 hover:text-brand-blue transition-colors">{link.name}</a>
+              <a key={link.name} href={link.href} className="text-white/50 hover:text-white transition-colors duration-200">{link.name}</a>
             ))}
-            <button onClick={onLogin} className="glass-btn !py-3 !px-8 !text-xs">Entrar</button>
-            <a href="#precos" className="blue-gradient-btn !py-3 !px-8 !text-xs text-center">Testar Grátis</a>
+          </div>
+
+          <div className="hidden md:flex items-center gap-3">
+            <button onClick={onLogin} className="glass-btn !py-2.5 !px-6 !text-xs !rounded-xl">Entrar</button>
+            <a href="#precos" className="blue-gradient-btn !py-2.5 !px-6 !text-xs !rounded-xl text-center whitespace-nowrap">Testar Grátis — 7 dias</a>
           </div>
 
           <div className="md:hidden">
@@ -92,149 +113,227 @@ const Navbar = ({ onLogin }: { onLogin: () => void }) => {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 bg-white/5 rounded-xl border border-white/10 text-white"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Menu */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-grafite/95 backdrop-blur-2xl border-b border-white/10 overflow-hidden"
+            className="md:hidden bg-[#050505]/95 backdrop-blur-2xl border-b border-white/10 overflow-hidden"
           >
-            <div className="px-4 py-8 space-y-6 flex flex-col items-center">
+            <div className="px-6 py-8 space-y-5 flex flex-col items-center">
               {navLinks.map(link => (
                 <a 
                   key={link.name} 
                   href={link.href} 
                   onClick={() => setMobileMenuOpen(false)}
-                  className="text-xl font-bold text-white/70 hover:text-brand-blue transition-colors"
+                  className="text-base font-bold text-white/60 hover:text-white transition-colors"
                 >
                   {link.name}
                 </a>
               ))}
-              <div className="w-full pt-6 flex flex-col gap-4">
-                <button 
-                  onClick={() => { setMobileMenuOpen(false); onLogin(); }} 
-                  className="glass-btn w-full py-4 text-sm"
-                >
-                  Entrar
-                </button>
-                <a 
-                  href="#precos"
-                  onClick={() => setMobileMenuOpen(false)} 
-                  className="blue-gradient-btn w-full py-4 text-sm text-center"
-                >
-                  Testar Grátis
-                </a>
+              <div className="w-full pt-4 flex flex-col gap-3">
+                <button onClick={() => { setMobileMenuOpen(false); onLogin(); }} className="glass-btn w-full py-3.5 text-sm">Entrar</button>
+                <a href="#precos" onClick={() => setMobileMenuOpen(false)} className="blue-gradient-btn w-full py-3.5 text-sm text-center">Testar Grátis — 7 dias</a>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </nav>
+    </motion.nav>
   );
 };
 
 const Hero = ({ onStart }: { onStart: () => void }) => {
   const { scrollY } = useScroll();
-  const y1 = useTransform(scrollY, [0, 500], [0, 100]);
-  const y2 = useTransform(scrollY, [0, 500], [0, -100]);
+  const y1 = useTransform(scrollY, [0, 600], [0, 80]);
+  const opacity = useTransform(scrollY, [0, 400], [1, 0]);
+
+  const appointments = [
+    { name: 'Rafaela Lima', service: 'Corte + Escova', time: '09:00', avatar: '22' },
+    { name: 'Carlos Souza', service: 'Barba Completa', time: '10:30', avatar: '33' },
+    { name: 'Jéssica Mota', service: 'Coloração', time: '11:00', avatar: '44' },
+  ];
 
   return (
-    <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+    <section className="relative pt-28 pb-16 lg:pt-40 lg:pb-24 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid lg:grid-cols-12 gap-16 items-center">
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }}
+        <div className="grid lg:grid-cols-12 gap-12 lg:gap-20 items-center">
+
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
             className="lg:col-span-7"
           >
-            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-brand-blue/10 border border-brand-blue/20 text-brand-cyan text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] mb-6 sm:mb-8">
-              <Zap className="w-4 h-4 fill-brand-cyan" />
-              O Fim das Agendas de Papel e do Caos no WhatsApp
-            </div>
-            <h1 className="text-4xl sm:text-7xl lg:text-8xl font-bold leading-[1.1] lg:leading-[0.9] mb-6 sm:mb-8 tracking-tighter">
-              Sua Agenda Cheia. <br className="hidden sm:block" />
-              <span className="text-gradient">Sem Perder um Segundo.</span>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+              className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-gradient-to-r from-brand-blue/15 to-brand-cyan/10 border border-brand-blue/25 text-brand-cyan text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.25em] mb-6 sm:mb-8"
+            >
+              <div className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-pulse"></div>
+              Já usado por +500 profissionais no Brasil
+            </motion.div>
+
+            <h1 className="text-[2.6rem] sm:text-7xl lg:text-[5.5rem] font-bold leading-[1.05] lg:leading-[0.95] mb-6 sm:mb-8 tracking-tighter">
+              Pare de Perder{' '}
+              <br className="hidden sm:block" />
+              <span className="text-gradient">Dinheiro com Faltas.</span>
             </h1>
-            <p className="text-lg lg:text-2xl text-white/60 mb-8 sm:mb-12 max-w-2xl leading-relaxed font-light">
-              Recupere até <span className="text-white font-medium">80% das faltas</span> com lembretes automáticos e profissionalize seu negócio com o sistema de agendamento mais rápido do Brasil.
+
+            <p className="text-base sm:text-xl lg:text-2xl text-white/55 mb-8 sm:mb-10 max-w-xl leading-relaxed font-light">
+              Automatize lembretes via WhatsApp, receba agendamentos 24h por dia e recupere até{' '}
+              <span className="text-white font-semibold">R$ 1.200/mês</span> que você está deixando na mesa hoje.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-center">
-              <a href="#precos" className="blue-gradient-btn text-lg sm:text-xl px-8 sm:px-12 py-5 sm:py-6 w-full sm:w-auto text-center group">
-                Começar meu teste de 7 dias agora
-                <ArrowRight className="inline-block ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center mb-10 sm:mb-14">
+              <a href="#precos" className="blue-gradient-btn text-base sm:text-lg px-8 sm:px-10 py-4 sm:py-5 w-full sm:w-auto text-center group flex items-center justify-center gap-2">
+                Começar grátis por 7 dias
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </a>
-              <a href="#como-funciona" className="glass-btn text-base sm:text-lg px-8 sm:px-10 py-5 sm:py-6 w-full sm:w-auto flex items-center justify-center gap-3">
-                <Play className="w-5 h-5 fill-white" />
-                Ver como funciona
+              <a href="#como-funciona" className="glass-btn text-sm sm:text-base px-7 sm:px-8 py-4 sm:py-5 w-full sm:w-auto flex items-center justify-center gap-2.5 !rounded-2xl">
+                <Play className="w-4 h-4 fill-white" />
+                Como funciona
               </a>
             </div>
-            <div className="mt-16 flex items-center gap-4 sm:gap-8">
-              <div className="flex -space-x-3 sm:-space-x-4 shrink-0">
-                {[1, 2, 3, 4].map(i => (
-                  <img key={i} src={`https://i.pravatar.cc/200?img=${i+15}`} className="w-10 h-10 sm:w-14 sm:h-14 rounded-full border-2 sm:border-4 border-grafite shadow-xl" alt="User" referrerPolicy="no-referrer" />
-                ))}
-              </div>
-              <div className="flex flex-col items-start gap-1 sm:gap-2">
-                <div className="flex text-yellow-500 gap-0.5 sm:gap-1">
-                  {[1, 2, 3, 4, 5].map(i => <Star key={i} className="w-3.5 h-3.5 sm:w-5 sm:h-5 fill-current" />)}
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
+              <div className="flex items-center gap-3">
+                <div className="flex -space-x-2.5 shrink-0">
+                  {[22, 33, 44, 55].map(i => (
+                    <img key={i} src={`https://i.pravatar.cc/100?img=${i}`} className="w-9 h-9 rounded-full border-2 border-[#050505] shadow-md" alt="" referrerPolicy="no-referrer" />
+                  ))}
                 </div>
-                <p className="text-white/90 font-semibold text-[10px] sm:text-base lg:text-lg tracking-tight leading-tight">
-                  <span className="text-brand-cyan">+500 profissionais</span> <span className="text-white/50 font-light block sm:inline">já escalaram seus ganhos este mês</span>
-                </p>
+                <div>
+                  <div className="flex text-yellow-400 gap-0.5 mb-0.5">
+                    {[1,2,3,4,5].map(i => <Star key={i} className="w-3 h-3 fill-current" />)}
+                  </div>
+                  <p className="text-white/50 text-xs font-medium">4.9 de 5 estrelas</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-6 text-white/30 text-xs">
+                <div className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-500" /><span>Sem cartão</span></div>
+                <div className="flex items-center gap-1.5"><Lock className="w-3.5 h-3.5 text-brand-blue" /><span>100% seguro</span></div>
+                <div className="flex items-center gap-1.5"><Zap className="w-3.5 h-3.5 text-brand-cyan" /><span>Setup em 5 min</span></div>
               </div>
             </div>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             style={{ y: y1 }}
-            className="lg:col-span-5 relative hidden lg:block"
+            className="lg:col-span-5 relative hidden lg:flex items-center justify-center"
           >
-            <div className="relative z-10 animate-float">
-              <div className="w-full aspect-[9/19] max-w-[320px] mx-auto bg-grafite rounded-[3.5rem] border-[12px] border-white/5 shadow-[0_0_100px_rgba(59,130,246,0.2)] overflow-hidden relative">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-7 bg-grafite rounded-b-3xl z-20"></div>
-                <div className="bg-[#0f0f0f] h-full p-6 pt-12">
-                  <div className="h-40 bg-gradient-to-br from-brand-blue/20 to-brand-cyan/20 rounded-3xl border border-white/10 p-6 mb-6">
-                    <div className="h-4 w-24 bg-white/20 rounded-full mb-4"></div>
-                    <div className="h-10 w-full bg-white/10 rounded-xl"></div>
-                  </div>
-                  <div className="space-y-4">
-                    {[1, 2, 3].map(i => (
-                      <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
-                        <div className="w-10 h-10 rounded-xl bg-white/10"></div>
-                        <div className="flex-1 space-y-2">
-                          <div className="h-3 w-20 bg-white/20 rounded-full"></div>
-                          <div className="h-2 w-32 bg-white/10 rounded-full"></div>
-                        </div>
+            <div className="relative">
+              <div className="absolute -inset-8 bg-gradient-to-br from-brand-blue/20 to-brand-cyan/10 rounded-full blur-3xl"></div>
+              <div className="relative z-10 animate-float">
+                <div className="w-[290px] bg-[#0d0d0d] rounded-[3rem] border border-white/[0.07] shadow-[0_30px_100px_rgba(0,0,0,0.6),0_0_60px_rgba(59,130,246,0.15)] overflow-hidden">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-6 bg-[#0d0d0d] rounded-b-2xl z-20 border-b border-white/5"></div>
+
+                  <div className="p-5 pt-10">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <p className="text-[10px] text-white/30 uppercase tracking-widest font-bold">Hoje — Quinta-feira</p>
+                        <h3 className="text-white font-bold text-lg mt-0.5">Agenda do Dia</h3>
                       </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-3/4 h-12 bg-brand-blue rounded-2xl flex items-center justify-center shadow-lg shadow-brand-blue/30">
-                  <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full w-3/4 bg-emerald-500"></div>
+                      <div className="w-8 h-8 bg-brand-blue/10 border border-brand-blue/30 rounded-xl flex items-center justify-center">
+                        <Calendar className="w-4 h-4 text-brand-blue" />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 mb-5">
+                      {[
+                        { label: 'Agendados', value: '8', color: 'text-white' },
+                        { label: 'Confirmados', value: '6', color: 'text-emerald-400' },
+                        { label: 'Receita', value: 'R$480', color: 'text-brand-cyan' },
+                      ].map((s, i) => (
+                        <div key={i} className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-2.5 text-center">
+                          <p className={`font-bold text-sm ${s.color}`}>{s.value}</p>
+                          <p className="text-white/25 text-[9px] font-medium mt-0.5">{s.label}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="space-y-2">
+                      {appointments.map((apt, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.8 + i * 0.15, duration: 0.5 }}
+                          className="flex items-center gap-3 p-3 bg-white/[0.04] border border-white/[0.06] rounded-2xl group hover:border-brand-blue/30 transition-colors"
+                        >
+                          <img src={`https://i.pravatar.cc/80?img=${apt.avatar}`} className="w-9 h-9 rounded-xl object-cover" alt="" referrerPolicy="no-referrer" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white text-xs font-bold truncate">{apt.name}</p>
+                            <p className="text-white/30 text-[10px] truncate">{apt.service}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="text-brand-cyan text-xs font-bold">{apt.time}</span>
+                            <div className="flex items-center justify-end gap-1 mt-0.5">
+                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                              <span className="text-[9px] text-emerald-400">Confirmado</span>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 1.4, duration: 0.5 }}
+                      className="mt-4 p-3 rounded-2xl bg-gradient-to-r from-brand-blue/15 to-brand-cyan/10 border border-brand-blue/20 flex items-center gap-3"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-brand-blue/20 flex items-center justify-center shrink-0">
+                        <Bell className="w-4 h-4 text-brand-cyan" />
+                      </div>
+                      <div>
+                        <p className="text-white text-[11px] font-bold">Lembrete enviado!</p>
+                        <p className="text-white/40 text-[9px]">Carlos confirmou via WhatsApp</p>
+                      </div>
+                      <Check className="w-4 h-4 text-emerald-400 ml-auto shrink-0" />
+                    </motion.div>
                   </div>
                 </div>
               </div>
+
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, x: 20 }}
+                animate={{ opacity: 1, scale: 1, x: 0 }}
+                transition={{ delay: 1.6, duration: 0.5 }}
+                className="absolute -right-10 top-8 bg-emerald-500/10 border border-emerald-500/30 backdrop-blur-xl rounded-2xl p-3.5 shadow-xl"
+              >
+                <p className="text-emerald-400 text-xs font-bold">+R$1.200</p>
+                <p className="text-white/40 text-[9px]">recuperados/mês</p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, x: -20 }}
+                animate={{ opacity: 1, scale: 1, x: 0 }}
+                transition={{ delay: 1.8, duration: 0.5 }}
+                className="absolute -left-10 bottom-16 bg-red-500/10 border border-red-500/20 backdrop-blur-xl rounded-2xl p-3.5 shadow-xl"
+              >
+                <p className="text-red-400 text-xs font-bold">No-show: 0</p>
+                <p className="text-white/40 text-[9px]">neste mês ✓</p>
+              </motion.div>
             </div>
           </motion.div>
         </div>
       </div>
-      
-      <div className="absolute inset-0 -z-20 opacity-40">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-grafite to-grafite"></div>
-        <img 
-          src="https://picsum.photos/seed/barber-shop/2560/1440?grayscale" 
-          className="w-full h-full object-cover" 
-          alt="Background" 
+
+      <div className="absolute inset-0 -z-20">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/30 via-[#050505]/60 to-[#050505]"></div>
+        <img
+          src="https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=2000&q=80&auto=format&fit=crop"
+          className="w-full h-full object-cover opacity-20"
+          alt="Background"
           referrerPolicy="no-referrer"
         />
       </div>
@@ -242,205 +341,462 @@ const Hero = ({ onStart }: { onStart: () => void }) => {
   );
 };
 
-const Problem = () => (
-  <section className="py-20 lg:py-32 relative overflow-hidden bg-grafite">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-      <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-        <div>
-          <h2 className="text-3xl sm:text-6xl font-bold mb-8 leading-tight">
-            O Caos do WhatsApp <span className="text-red-500">Drena seu Lucro</span> e sua Saúde Mental.
-          </h2>
-          <div className="space-y-6 sm:space-y-8">
-            <div className="flex gap-4 sm:gap-6">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-red-500/10 flex items-center justify-center shrink-0">
-                <X className="text-red-500 w-5 h-5 sm:w-6 sm:h-6" />
+const StatsBar = () => {
+  const ref = React.useRef(null);
+  const inView = useInView(ref, { once: true, margin: '-80px' });
+  const stats = [
+    { value: 500, suffix: '+', label: 'Profissionais Ativos', icon: Users },
+    { value: 80, suffix: '%', label: 'Redução de No-Show', icon: TrendingUp },
+    { value: 1200, prefix: 'R$', suffix: '/mês', label: 'Receita Recuperada', icon: Star },
+    { value: 7, suffix: ' min', label: 'Para Configurar', icon: Zap },
+  ];
+  return (
+    <section ref={ref} className="py-10 lg:py-14 border-y border-white/[0.05] bg-white/[0.02]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-0">
+          {stats.map((s, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: i * 0.1, duration: 0.5 }}
+              className="text-center lg:border-r lg:last:border-r-0 border-white/[0.06] lg:px-8"
+            >
+              <div className="text-3xl sm:text-4xl font-bold text-white mb-1">
+                {inView && <AnimatedCounter target={s.value} prefix={s.prefix} suffix={s.suffix} />}
               </div>
-              <div>
-                <h4 className="text-lg sm:text-xl font-bold mb-1 sm:mb-2">O "Vácuo" que Mata Vendas</h4>
-                <p className="text-white/50 text-sm sm:text-base leading-relaxed">Clientes desistem de agendar porque você demora 2 horas para responder enquanto atende outro cliente.</p>
-              </div>
-            </div>
-            <div className="flex gap-4 sm:gap-6">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-red-500/10 flex items-center justify-center shrink-0">
-                <Clock className="text-red-500 w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-              <div>
-                <h4 className="text-lg sm:text-xl font-bold mb-1 sm:mb-2">Trabalho Não Remunerado</h4>
-                <p className="text-white/50 text-sm sm:text-base leading-relaxed">Você passa o domingo e as noites respondendo mensagens em vez de descansar com sua família.</p>
-              </div>
-            </div>
-            <div className="flex gap-4 sm:gap-6">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-red-500/10 flex items-center justify-center shrink-0">
-                <AlertCircle className="text-red-500 w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-              <div>
-                <h4 className="text-lg sm:text-xl font-bold mb-1 sm:mb-2">O Prejuízo do "No-Show"</h4>
-                <p className="text-white/50 text-sm sm:text-base leading-relaxed">Cadeiras vazias porque o cliente esqueceu e você não teve tempo de cobrar a confirmação.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="relative mt-12 lg:mt-0">
-          <div className="absolute inset-0 bg-brand-blue/20 blur-[100px] -z-10"></div>
-          <img 
-            src="https://picsum.photos/seed/stress/800/1000?grayscale" 
-            className="rounded-[2rem] sm:rounded-[2.5rem] border border-white/10 shadow-2xl grayscale hover:grayscale-0 transition-all duration-700 w-full" 
-            alt="Profissional Estressado" 
-            referrerPolicy="no-referrer"
-          />
-          <div className="absolute -bottom-6 -right-4 sm:-bottom-10 sm:-right-10 glass-card-light p-6 sm:p-8 max-w-[240px] sm:max-w-xs border-red-500/30">
-            <p className="text-red-500 font-bold text-base sm:text-lg mb-1 sm:mb-2">Fato Real:</p>
-            <p className="text-white/70 text-xs sm:text-sm">Profissionais autônomos perdem em média <span className="text-white font-bold">R$ 1.200,00/mês</span> apenas com faltas não confirmadas.</p>
-          </div>
+              <p className="text-white/35 text-xs sm:text-sm font-medium">{s.label}</p>
+            </motion.div>
+          ))}
         </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
-const Pillars = () => (
-  <section id="como-funciona" className="py-20 lg:py-32 relative overflow-hidden">
-    <div id="recursos" className="absolute -top-32"></div>
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="text-center mb-16 sm:mb-24">
-        <h2 className="text-3xl sm:text-6xl font-bold mb-6 sm:mb-8">Tecnologia que <span className="text-gradient">Trabalha por Você.</span></h2>
-        <p className="text-lg sm:text-xl text-white/50 max-w-3xl mx-auto font-light leading-relaxed">
-          Desenvolvemos cada recurso com um único objetivo: liberar seu tempo para que você possa focar no seu talento e no crescimento do seu negócio.
-        </p>
-      </div>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-12 sm:gap-16">
-        {[
-          {
-            title: "Agendamento em 3 Cliques",
-            desc: "Sem senhas, sem aplicativos pesados. Seu cliente escolhe o serviço e o horário em segundos. Experiência fluida que converte curiosos em clientes fiéis.",
-            icon: <Smartphone className="w-12 h-12 text-brand-blue" />,
-            image: "https://i.ibb.co/MkYfBnYZ/image.png"
-          },
-          {
-            title: "Inteligência Anti-Falta",
-            desc: "Lembretes automáticos via WhatsApp com confirmação em tempo real. Reduzimos o no-show em até 80% já no primeiro mês de uso.",
-            icon: <Bell className="w-12 h-12 text-brand-cyan" />,
-            image: "https://i.ibb.co/zV0DWVp4/image.png"
-          },
-          {
-            title: "Gestão de Elite",
-            desc: "Faturamento, comissões e controle de estoque em um painel intuitivo. Tome decisões baseadas em dados reais, não em achismos.",
-            icon: <BarChart3 className="w-12 h-12 text-indigo-500" />,
-            image: "https://i.ibb.co/Kcx9vZ3W/image.png"
-          }
-        ].map((pillar, idx) => (
-          <motion.div 
-            key={idx}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: idx * 0.2 }}
-            className="space-y-8 group"
+const Problem = () => {
+  const ref = React.useRef(null);
+  const inView = useInView(ref, { once: true, margin: '-80px' });
+  const problems = [
+    {
+      icon: <MessageCircle className="w-5 h-5 text-red-400" />,
+      title: 'O "Vácuo" que Mata Vendas',
+      desc: 'Clientes desistem em segundos. Enquanto você atende alguém, outros mandam mensagem e somem — direto para o concorrente.'
+    },
+    {
+      icon: <Clock className="w-5 h-5 text-red-400" />,
+      title: 'Fim de Semana no WhatsApp',
+      desc: 'Domingo à noite respondendo mensagem de agendamento. Seu tempo vale dinheiro — e você está desperdiçando nos dois.'
+    },
+    {
+      icon: <AlertCircle className="w-5 h-5 text-red-400" />,
+      title: 'Cadeira Vazia, Conta Vazia',
+      desc: 'No-show é prejuízo real. Sem cobrança de confirmação, você perde o horário e ainda fica sem receber.'
+    },
+  ];
+
+  return (
+    <section className="py-20 lg:py-32 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-[#080808] to-[#050505] -z-10"></div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10" ref={ref}>
+        <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={inView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-tr from-brand-blue to-brand-cyan rounded-[2.5rem] blur-2xl opacity-0 group-hover:opacity-20 transition-opacity"></div>
-              <img src={pillar.image} alt={pillar.title} className="w-full aspect-[4/3] object-cover rounded-[2.5rem] border border-white/10 shadow-2xl relative z-10 transition-transform group-hover:scale-[1.02]" referrerPolicy="no-referrer" />
+            <p className="text-red-500 text-[11px] font-bold uppercase tracking-[0.2em] mb-4">O Problema</p>
+            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-bold mb-10 leading-tight">
+              Gerenciar Agenda no WhatsApp é <span className="text-red-500">Jogar Dinheiro Fora.</span>
+            </h2>
+            <div className="space-y-7">
+              {problems.map((p, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={inView ? { opacity: 1, x: 0 } : {}}
+                  transition={{ delay: 0.2 + i * 0.15, duration: 0.6 }}
+                  className="flex gap-4 sm:gap-5 group"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0 group-hover:bg-red-500/15 transition-colors">
+                    {p.icon}
+                  </div>
+                  <div>
+                    <h4 className="text-base sm:text-lg font-bold mb-1.5 text-white">{p.title}</h4>
+                    <p className="text-white/45 text-sm sm:text-base leading-relaxed">{p.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
             </div>
-            <div className="flex items-center gap-6">
-              <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:bg-brand-blue/10 group-hover:border-brand-blue/30 transition-colors">
-                {pillar.icon}
-              </div>
-              <h3 className="text-3xl font-bold">{pillar.title}</h3>
-            </div>
-            <p className="text-white/60 leading-relaxed text-xl font-light">
-              {pillar.desc}
-            </p>
           </motion.div>
-        ))}
+
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={inView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className="relative"
+          >
+            <div className="absolute -inset-6 bg-red-500/5 rounded-[3rem] blur-2xl -z-10"></div>
+            <div className="relative rounded-[2rem] overflow-hidden border border-white/[0.07] shadow-2xl">
+              <img
+                src="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=900&q=80&auto=format&fit=crop"
+                className="w-full aspect-[4/5] object-cover object-top"
+                alt="Profissional Estressado"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#050505]/90 via-[#050505]/30 to-transparent"></div>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: 0.5, duration: 0.5 }}
+              className="absolute -bottom-4 -right-4 sm:-bottom-6 sm:-right-6 bg-[#0d0d0d] border border-red-500/30 p-5 sm:p-6 rounded-2xl shadow-2xl max-w-[200px] sm:max-w-[230px]"
+            >
+              <p className="text-red-400 font-bold text-xs uppercase tracking-wider mb-1.5">Prejuízo Médio</p>
+              <p className="text-3xl font-bold text-white mb-1">R$ 1.200</p>
+              <p className="text-white/35 text-xs">perdidos por mês com no-shows não confirmados</p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: 0.6, duration: 0.5 }}
+              className="absolute -top-4 -left-4 sm:-top-6 sm:-left-6 bg-[#0d0d0d] border border-orange-500/30 p-4 sm:p-5 rounded-2xl shadow-2xl"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <Clock className="w-4 h-4 text-orange-400" />
+                <p className="text-orange-400 font-bold text-xs">3h/dia</p>
+              </div>
+              <p className="text-white/35 text-[10px]">perdidas em mensagens de agendamento</p>
+            </motion.div>
+          </motion.div>
+        </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
+
+const Pillars = () => {
+  const steps = [
+    {
+      num: '01',
+      title: 'Cadastre seu negócio em 5 minutos',
+      desc: 'Nome, serviços, preços e horários. Simples assim. Você recebe um link profissional para colocar na bio do Instagram.',
+      icon: <Smartphone className="w-6 h-6 text-brand-blue" />,
+      color: 'brand-blue',
+      image: 'https://i.ibb.co/MkYfBnYZ/image.png'
+    },
+    {
+      num: '02',
+      title: 'Clientes agendam sozinhos, 24h/dia',
+      desc: 'Sem precisar de você. Eles escolhem o serviço, o horário disponível e confirmam. Você só aparece na hora de trabalhar.',
+      icon: <Bell className="w-6 h-6 text-brand-cyan" />,
+      color: 'brand-cyan',
+      image: 'https://i.ibb.co/zV0DWVp4/image.png'
+    },
+    {
+      num: '03',
+      title: 'Lembretes automáticos eliminam faltas',
+      desc: 'O sistema avisa o cliente via WhatsApp antes da consulta. Ele confirma com um clique — ou cancela e libera o horário para outro.',
+      icon: <MessageCircle className="w-6 h-6 text-indigo-400" />,
+      color: 'indigo',
+      image: 'https://i.ibb.co/Kcx9vZ3W/image.png'
+    },
+  ];
+
+  return (
+    <section id="como-funciona" className="py-20 lg:py-32 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-[#050505] to-[#070707] -z-10"></div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.7 }}
+          className="text-center mb-16 sm:mb-24"
+        >
+          <p className="text-brand-cyan text-[11px] font-bold uppercase tracking-[0.2em] mb-4">Como Funciona</p>
+          <h2 className="text-3xl sm:text-5xl lg:text-6xl font-bold mb-5">
+            3 Passos para uma{' '}
+            <span className="text-gradient">Agenda Lotada.</span>
+          </h2>
+          <p className="text-base sm:text-lg text-white/45 max-w-2xl mx-auto font-light leading-relaxed">
+            Sem complicação. Sem curso. Você configura hoje e começa a receber agendamentos ainda essa semana.
+          </p>
+        </motion.div>
+
+        <div className="space-y-20 lg:space-y-32">
+          {steps.map((step, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              className={`grid lg:grid-cols-2 gap-12 lg:gap-20 items-center ${idx % 2 === 1 ? 'lg:flex-row-reverse' : ''}`}
+            >
+              <div className={idx % 2 === 1 ? 'lg:order-2' : ''}>
+                <div className="flex items-center gap-4 mb-6">
+                  <span className="text-5xl sm:text-7xl font-bold text-white/[0.06] font-display">{step.num}</span>
+                  <div className={`w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center`}>
+                    {step.icon}
+                  </div>
+                </div>
+                <h3 className="text-2xl sm:text-4xl font-bold mb-5 leading-tight">{step.title}</h3>
+                <p className="text-white/50 text-base sm:text-lg leading-relaxed mb-8">{step.desc}</p>
+                <div className="flex items-center gap-2 text-brand-cyan text-sm font-bold">
+                  <Check className="w-4 h-4" />
+                  <span>Pronto para usar em minutos</span>
+                </div>
+              </div>
+              <div className={`relative ${idx % 2 === 1 ? 'lg:order-1' : ''}`}>
+                <div className={`absolute -inset-4 bg-${step.color}/10 rounded-[3rem] blur-3xl -z-10`}></div>
+                <div className="rounded-[2rem] overflow-hidden border border-white/[0.07] shadow-2xl">
+                  <img
+                    src={step.image}
+                    alt={step.title}
+                    className="w-full aspect-[4/3] object-cover hover:scale-105 transition-transform duration-700"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const Testimonials = () => {
+  const testimonials = [
+    {
+      name: 'Aline Rodrigues',
+      role: 'Esteticista — São Paulo, SP',
+      avatar: '12',
+      text: 'Antes eu perdia 3 clientes por semana só porque não conseguia responder rápido. Agora eles agendam pelo link da bio e eu nem preciso mexer no celular. Em 30 dias recuperei mais de R$ 900.',
+      stars: 5,
+    },
+    {
+      name: 'Bruno Ferreira',
+      role: 'Barbeiro — Curitiba, PR',
+      avatar: '56',
+      text: 'O lembrete automático via WhatsApp mudou tudo. Meu no-show caiu de 4-5 por semana para quase zero. Só isso já paga o sistema por vários meses.',
+      stars: 5,
+    },
+    {
+      name: 'Carla Menezes',
+      role: 'Manicure — Rio de Janeiro, RJ',
+      avatar: '29',
+      text: 'Achei que seria difícil de configurar mas foi 5 minutos e pronto. Meu link profissional na bio já trouxe 12 clientes novos neste mês.',
+      stars: 5,
+    },
+    {
+      name: 'Diego Alves',
+      role: 'Personal Trainer — Belo Horizonte, MG',
+      avatar: '67',
+      text: 'Finalmente parei de trabalhar no domingo respondendo mensagem de agendamento. Meus clientes agendam e cancelam sozinhos. Libertador.',
+      stars: 5,
+    },
+    {
+      name: 'Fernanda Oliveira',
+      role: 'Psicóloga — Florianópolis, SC',
+      avatar: '39',
+      text: 'A gestão de agenda ficou muito mais profissional. Consigo ver minha receita do mês, os horários livres e enviar lembretes — tudo num só lugar.',
+      stars: 5,
+    },
+    {
+      name: 'Gustavo Lima',
+      role: 'Fotógrafo — Porto Alegre, RS',
+      avatar: '48',
+      text: 'Sistema incrível. Fácil de usar, visual bonito, e o suporte respondeu minha dúvida em menos de 1 hora. Recomendo sem hesitar.',
+      stars: 5,
+    },
+  ];
+
+  return (
+    <section id="depoimentos" className="py-20 lg:py-32 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-[#070707] to-[#050505] -z-10"></div>
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.7 }}
+          className="text-center mb-14 sm:mb-20"
+        >
+          <p className="text-brand-cyan text-[11px] font-bold uppercase tracking-[0.2em] mb-4">Depoimentos</p>
+          <h2 className="text-3xl sm:text-5xl lg:text-6xl font-bold mb-5">
+            Quem Usa <span className="text-gradient">Não Volta Atrás.</span>
+          </h2>
+          <p className="text-white/45 text-base sm:text-lg max-w-xl mx-auto font-light">
+            Mais de 500 profissionais já transformaram suas agendas. Veja o que eles dizem.
+          </p>
+        </motion.div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+          {testimonials.map((t, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
+              transition={{ delay: i * 0.08, duration: 0.6 }}
+              className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-6 sm:p-7 hover:border-brand-blue/20 hover:bg-white/[0.05] transition-all duration-300 group"
+            >
+              <div className="flex text-yellow-400 gap-0.5 mb-4">
+                {[1,2,3,4,5].map(s => <Star key={s} className="w-3.5 h-3.5 fill-current" />)}
+              </div>
+              <p className="text-white/65 text-sm sm:text-base leading-relaxed mb-6">"{t.text}"</p>
+              <div className="flex items-center gap-3 pt-4 border-t border-white/[0.06]">
+                <img src={`https://i.pravatar.cc/80?img=${t.avatar}`} className="w-10 h-10 rounded-full border border-white/10" alt="" referrerPolicy="no-referrer" />
+                <div>
+                  <p className="text-white font-bold text-sm">{t.name}</p>
+                  <p className="text-white/35 text-xs">{t.role}</p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
 
 const Pricing = ({ onSelect }: { onSelect: () => void }) => (
   <section id="precos" className="py-20 lg:py-32 relative overflow-hidden">
+    <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-[#080808] to-[#050505] -z-10"></div>
+    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.06)_0%,transparent_70%)] -z-10"></div>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-      <div className="text-center mb-16 sm:mb-24">
-        <h2 className="text-4xl lg:text-7xl font-bold mb-6 sm:mb-8">Investimento <span className="text-gradient">Ridículo.</span></h2>
-        <p className="text-lg sm:text-2xl text-white/60 font-light max-w-2xl mx-auto">O valor de um único corte/serviço recuperado paga o sistema pelo mês inteiro.</p>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-80px' }}
+        transition={{ duration: 0.7 }}
+        className="text-center mb-14 sm:mb-20"
+      >
+        <p className="text-brand-cyan text-[11px] font-bold uppercase tracking-[0.2em] mb-4">Preços</p>
+        <h2 className="text-3xl sm:text-5xl lg:text-6xl font-bold mb-5">
+          Menos do que <span className="text-gradient">Um Corte de Cabelo.</span>
+        </h2>
+        <p className="text-white/45 text-base sm:text-lg max-w-xl mx-auto font-light">
+          Um único no-show recuperado já paga o sistema pelo mês inteiro. O resto é lucro puro.
+        </p>
+      </motion.div>
 
-      <div className="grid md:grid-cols-2 gap-8 lg:gap-12 max-w-5xl mx-auto items-stretch">
-        {/* Starter */}
-        <div className="glass-card p-6 sm:p-8 md:p-12 flex flex-col border-white/5 hover:border-white/20 transition-colors opacity-80 hover:opacity-100">
-          <div className="mb-8 sm:mb-10">
-            <h3 className="text-lg sm:text-xl font-bold text-white/40 mb-3 sm:mb-4 uppercase tracking-widest">Teste Grátis</h3>
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl sm:text-5xl font-bold">R$ 0</span>
-              <span className="text-white/40 text-lg sm:text-xl">/7 dias</span>
+      <div className="grid md:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto items-start">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="bg-white/[0.03] border border-white/[0.08] rounded-3xl p-7 sm:p-9 flex flex-col hover:border-white/[0.15] transition-colors"
+        >
+          <div className="mb-8">
+            <p className="text-white/30 text-[11px] font-bold uppercase tracking-[0.2em] mb-3">Teste Grátis</p>
+            <div className="flex items-baseline gap-2 mb-3">
+              <span className="text-5xl sm:text-6xl font-bold">R$ 0</span>
+              <span className="text-white/30 text-base">/7 dias</span>
             </div>
-            <p className="mt-4 sm:mt-6 text-white/60 text-base sm:text-lg">Experimente o poder total sem compromisso e sem cartão.</p>
+            <p className="text-white/40 text-sm">Acesso total. Sem cartão. Sem compromisso.</p>
           </div>
-          <ul className="space-y-4 sm:space-y-6 mb-10 sm:mb-12 flex-1">
+          <ul className="space-y-4 mb-8 flex-1">
             {[
-              "Todas as funções liberadas",
-              "Lembretes via WhatsApp",
-              "Link de Bio Ativo",
-              "Suporte Prioritário"
+              'Todas as funcionalidades liberadas',
+              'Lembretes via WhatsApp',
+              'Link profissional para bio',
+              'Suporte via chat',
             ].map((item, i) => (
-              <li key={i} className="flex items-center gap-3 sm:gap-4 text-base sm:text-lg">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-brand-blue/20 flex items-center justify-center shrink-0"><Check className="w-3 h-3 sm:w-4 sm:h-4 text-brand-blue" /></div>
+              <li key={i} className="flex items-center gap-3 text-sm sm:text-base text-white/60">
+                <div className="w-5 h-5 rounded-full bg-white/10 border border-white/15 flex items-center justify-center shrink-0">
+                  <Check className="w-3 h-3 text-white/50" />
+                </div>
                 {item}
               </li>
             ))}
           </ul>
-          <button onClick={onSelect} className="glass-btn !w-full text-lg sm:text-xl py-5 sm:py-6">
-            Quero testar grátis
+          <button onClick={onSelect} className="glass-btn !w-full py-4 !rounded-2xl text-base">
+            Começar gratuitamente
           </button>
-        </div>
+        </motion.div>
 
-        {/* PRO */}
-        <div className="bg-gradient-to-b from-brand-blue/20 to-transparent backdrop-blur-2xl p-6 sm:p-8 md:p-12 rounded-[2.5rem] sm:rounded-[3rem] border border-brand-blue/30 shadow-[0_0_50px_rgba(59,130,246,0.2)] flex flex-col relative w-full z-10 items-stretch transform lg:scale-105 mt-8 md:mt-0">
-          <div className="absolute -top-5 sm:-top-6 left-1/2 -translate-x-1/2 bg-brand-blue text-white text-[10px] sm:text-sm font-bold px-6 sm:px-8 py-2 rounded-full uppercase tracking-[0.2em] shadow-lg shadow-brand-blue/50 whitespace-nowrap">
-            Mais Recomendado
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="relative bg-gradient-to-b from-brand-blue/[0.12] to-brand-blue/[0.04] border border-brand-blue/30 rounded-3xl p-7 sm:p-9 flex flex-col shadow-[0_0_60px_rgba(59,130,246,0.12)]"
+        >
+          <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-brand-blue to-brand-cyan text-white text-[10px] font-bold px-5 py-1.5 rounded-full uppercase tracking-[0.2em] shadow-lg shadow-brand-blue/40 whitespace-nowrap">
+            Mais Popular
           </div>
-          <div className="mb-8 sm:mb-10">
-            <h3 className="text-lg sm:text-xl font-bold text-white/60 mb-3 sm:mb-4 uppercase tracking-widest">Plano PRO</h3>
-            <div className="flex flex-wrap items-baseline gap-2">
-              <span className="text-white/40 line-through text-lg sm:text-xl">R$ 89,90</span>
-              <span className="text-4xl sm:text-5xl md:text-6xl font-bold text-brand-cyan">R$ 49,90</span>
-              <span className="text-white/40 text-lg sm:text-xl">/mês</span>
+          <div className="mb-8">
+            <p className="text-brand-cyan text-[11px] font-bold uppercase tracking-[0.2em] mb-3">Plano PRO</p>
+            <div className="flex flex-wrap items-baseline gap-2 mb-1">
+              <span className="text-white/25 line-through text-lg">R$ 89,90</span>
             </div>
-            <p className="mt-4 sm:mt-6 text-white/80 text-base sm:text-lg">O arsenal completo para o profissional autônomo.</p>
+            <div className="flex items-baseline gap-2 mb-3">
+              <span className="text-5xl sm:text-6xl font-bold text-white">R$ 49</span>
+              <span className="text-brand-cyan text-xl font-bold">,90</span>
+              <span className="text-white/30 text-base">/mês</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 text-emerald-400 text-xs font-bold bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
+              <Zap className="w-3 h-3" />
+              Economize R$ 480/ano
+            </div>
           </div>
-          <ul className="space-y-4 sm:space-y-6 mb-10 sm:mb-12 flex-1">
+          <ul className="space-y-4 mb-8 flex-1">
             {[
-              "Agenda Profissional Ilimitada",
-              "Link Personalizado para Bio",
-              "Lembretes via WhatsApp",
-              "Relatórios de Faturamento",
-              "Multi-agendas (Equipe)",
-              "Cálculo de Comissões",
-              "Gestão de Estoque",
-              "Atendimento via WhatsApp (Link Direto)"
+              'Agenda Profissional Ilimitada',
+              'Link Personalizado para Bio',
+              'Lembretes Automáticos (WhatsApp)',
+              'Relatórios de Faturamento',
+              'Multi-agendas para Equipe',
+              'Cálculo de Comissões',
+              'Gestão de Estoque',
+              'Suporte Prioritário',
             ].map((item, i) => (
-              <li key={i} className="flex items-center gap-3 sm:gap-4 text-base sm:text-lg">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-brand-cyan/20 flex items-center justify-center shrink-0"><Check className="w-3 h-3 sm:w-4 sm:h-4 text-brand-cyan" /></div>
+              <li key={i} className="flex items-center gap-3 text-sm sm:text-base text-white/75">
+                <div className="w-5 h-5 rounded-full bg-brand-cyan/15 border border-brand-cyan/25 flex items-center justify-center shrink-0">
+                  <Check className="w-3 h-3 text-brand-cyan" />
+                </div>
                 {item}
               </li>
             ))}
           </ul>
-          <button onClick={onSelect} className="blue-gradient-btn !w-full text-lg sm:text-xl py-5 sm:py-6">
-            Assinar Plano PRO
+          <button onClick={onSelect} className="blue-gradient-btn !w-full py-4 !rounded-2xl text-base font-bold">
+            Assinar Plano PRO agora
           </button>
-          <p className="text-center mt-6 text-white/30 text-[10px] sm:text-xs uppercase tracking-widest font-bold">
-            <Lock className="inline-block w-3 h-3 mr-2" />
-            Pagamento 100% Seguro
+          <p className="text-center mt-4 text-white/20 text-[10px] uppercase tracking-widest font-bold">
+            <Lock className="inline-block w-3 h-3 mr-1.5" />
+            Pagamento 100% Seguro · Cancele quando quiser
           </p>
-        </div>
+        </motion.div>
       </div>
-      
-      <div className="mt-12 sm:mt-20 text-center">
-        <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] sm:text-sm font-bold">
-          <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5" />
-          Garantia Incondicional de 7 Dias
-        </div>
-      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6, delay: 0.3 }}
+        className="mt-12 sm:mt-16 flex flex-wrap justify-center gap-5 sm:gap-8"
+      >
+        {[
+          { icon: <ShieldCheck className="w-4 h-4 text-emerald-400" />, text: 'Garantia de 7 dias' },
+          { icon: <Lock className="w-4 h-4 text-brand-blue" />, text: 'Sem fidelidade' },
+          { icon: <Zap className="w-4 h-4 text-brand-cyan" />, text: 'Cancele a qualquer hora' },
+          { icon: <Users className="w-4 h-4 text-indigo-400" />, text: '+500 clientes satisfeitos' },
+        ].map((b, i) => (
+          <div key={i} className="flex items-center gap-2 text-white/35 text-xs font-medium">
+            {b.icon}
+            {b.text}
+          </div>
+        ))}
+      </motion.div>
     </div>
   </section>
 );
@@ -449,27 +805,46 @@ const FAQ = () => {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   
   const questions = [
-    { q: "Preciso instalar algum programa ou aplicativo?", a: "Não! O Agendei.me é 100% online. Você e seus clientes acessam direto pelo navegador de qualquer dispositivo (celular, tablet ou PC). Sem ocupar memória do celular e sem atualizações chatas." },
-    { q: "Meus clientes precisam criar conta para marcar?", a: "Jamais! Sabemos que cada segundo conta. O cliente só precisa informar o nome e o WhatsApp para garantir o horário. Menos fricção significa mais agendamentos para você." },
-    { q: "Como funcionam os lembretes de WhatsApp?", a: "O sistema envia automaticamente uma mensagem personalizada para o cliente antes do horário marcado, com um link para ele confirmar ou desmarcar. Tudo isso sem você precisar tocar no celular." },
-    { q: "Posso cancelar minha assinatura quando quiser?", a: "Sim, com total liberdade. Não temos contratos de fidelidade ou multas de cancelamento. Você permanece conosco enquanto o sistema estiver gerando valor para o seu negócio." },
-    { q: "O plano PRO de R$ 49,90 tem alguma taxa extra?", a: "Nenhuma taxa escondida. O valor é fixo mensal e inclui todos os recursos de agendamento, lembretes e gestão. Transparência total para você crescer com segurança." }
+    { q: "Preciso instalar algum aplicativo?", a: "Não! O Agendei.me é 100% online. Você e seus clientes acessam pelo navegador de qualquer dispositivo. Sem instalar nada, sem atualizar nada." },
+    { q: "Meus clientes precisam criar uma conta?", a: "Nunca. Seu cliente acessa seu link, escolhe o serviço e o horário, informa o nome e o WhatsApp — e pronto. Menos fricção = mais agendamentos para você." },
+    { q: "Como funcionam os lembretes automáticos?", a: "O sistema envia uma mensagem via WhatsApp para o cliente antes do horário marcado. Ele confirma ou cancela com um clique — sem você precisar fazer nada." },
+    { q: "Posso cancelar quando quiser?", a: "Sim, a qualquer momento. Sem multa, sem contrato de fidelidade, sem dor de cabeça. Você fica porque quer, não porque é obrigado." },
+    { q: "O plano PRO tem alguma taxa escondida?", a: "Zero. R$ 49,90 fixo por mês, tudo incluído. Sem taxa de setup, sem cobrança por agendamento, sem surpresa na fatura." },
+    { q: "Quanto tempo leva para configurar?", a: "A maioria dos nossos clientes configura em menos de 5 minutos. Você cadastra seus serviços, horários e já pode divulgar o link na bio do seu Instagram." },
   ];
 
   return (
-    <section id="faq" className="py-20 lg:py-32 relative">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl sm:text-5xl font-bold text-center mb-12 sm:mb-20">Perguntas <span className="text-gradient">Frequentes</span></h2>
-        <div className="space-y-4 sm:space-y-6">
+    <section id="faq" className="py-20 lg:py-32 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-[#050505] to-[#080808] -z-10"></div>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.7 }}
+          className="text-center mb-14 sm:mb-20"
+        >
+          <p className="text-brand-cyan text-[11px] font-bold uppercase tracking-[0.2em] mb-4">FAQ</p>
+          <h2 className="text-3xl sm:text-5xl font-bold">Perguntas <span className="text-gradient">Frequentes</span></h2>
+        </motion.div>
+
+        <div className="space-y-3">
           {questions.map((item, idx) => (
-            <div key={idx} className="glass-card !rounded-2xl sm:!rounded-3xl overflow-hidden border-white/5 hover:border-white/10 transition-colors">
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 15 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
+              transition={{ delay: idx * 0.06, duration: 0.5 }}
+              className="bg-white/[0.03] border border-white/[0.07] rounded-2xl overflow-hidden hover:border-white/[0.12] transition-colors"
+            >
               <button 
                 onClick={() => setOpenIdx(openIdx === idx ? null : idx)}
-                className="w-full p-6 sm:p-8 text-left flex justify-between items-center gap-4"
+                className="w-full p-5 sm:p-6 text-left flex justify-between items-center gap-4"
               >
-                <span className="font-bold text-lg sm:text-xl">{item.q}</span>
-                <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5 flex items-center justify-center shrink-0 transition-transform ${openIdx === idx ? 'rotate-180 bg-brand-blue/20' : ''}`}>
-                  <ChevronDown className="w-5 h-5 sm:w-6 sm:h-6" />
+                <span className="font-bold text-sm sm:text-base text-white/85">{item.q}</span>
+                <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${openIdx === idx ? 'bg-brand-blue/20 border border-brand-blue/30 rotate-180' : 'bg-white/5 border border-white/10'}`}>
+                  <ChevronDown className="w-4 h-4" />
                 </div>
               </button>
               <AnimatePresence>
@@ -478,15 +853,16 @@ const FAQ = () => {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
                     className="overflow-hidden"
                   >
-                    <div className="p-6 sm:p-8 pt-0 text-white/50 text-base sm:text-lg leading-relaxed border-t border-white/5 mt-2 sm:mt-4">
+                    <div className="px-5 sm:px-6 pb-5 sm:pb-6 text-white/45 text-sm sm:text-base leading-relaxed border-t border-white/[0.05] pt-4">
                       {item.a}
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -494,70 +870,106 @@ const FAQ = () => {
   );
 };
 
+const BottomCTA = ({ onSelect }: { onSelect: () => void }) => (
+  <section className="py-20 lg:py-28 relative overflow-hidden">
+    <div className="absolute inset-0 bg-gradient-to-b from-[#080808] to-[#050505] -z-10"></div>
+    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.1)_0%,transparent_70%)] -z-10"></div>
+    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[1px] bg-gradient-to-r from-transparent via-brand-blue/30 to-transparent"></div>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-80px' }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-blue/10 border border-brand-blue/20 text-brand-cyan text-[10px] font-bold uppercase tracking-[0.2em] mb-8">
+          <div className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-pulse"></div>
+          Sua agenda te espera
+        </div>
+        <h2 className="text-3xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+          Comece Agora. Resultados{' '}
+          <span className="text-gradient">Ainda Esta Semana.</span>
+        </h2>
+        <p className="text-white/45 text-base sm:text-xl mb-10 max-w-2xl mx-auto font-light leading-relaxed">
+          7 dias grátis. Sem cartão de crédito. Sem complicação. Se não gostar — não paga. Simples assim.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <button onClick={onSelect} className="blue-gradient-btn text-base sm:text-lg px-10 py-4 sm:py-5 w-full sm:w-auto group flex items-center justify-center gap-2">
+            Quero minha agenda profissional
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </button>
+        </div>
+        <div className="mt-8 flex flex-wrap justify-center gap-5 sm:gap-8 text-white/25 text-xs">
+          <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />Sem cartão</span>
+          <span className="flex items-center gap-1.5"><Lock className="w-3.5 h-3.5 text-brand-blue" />Cancele quando quiser</span>
+          <span className="flex items-center gap-1.5"><Zap className="w-3.5 h-3.5 text-brand-cyan" />Setup em 5 minutos</span>
+        </div>
+      </motion.div>
+    </div>
+  </section>
+);
+
 const Footer = () => (
-  <footer className="bg-grafite border-t border-white/5 pt-20 pb-12 lg:pt-32 lg:pb-16 relative overflow-hidden">
+  <footer className="bg-[#050505] border-t border-white/[0.05] pt-16 pb-10 lg:pt-24 lg:pb-14 relative overflow-hidden">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-12 lg:gap-16 mb-16 lg:mb-24">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-10 lg:gap-16 mb-12 lg:mb-20">
         <div className="md:col-span-5">
-          <div className="flex items-center gap-3 mb-6 sm:mb-8">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-brand-blue to-brand-cyan rounded-2xl flex items-center justify-center">
-              <Calendar className="text-white w-6 h-6 sm:w-7 sm:h-7" />
+          <div className="flex items-center gap-2.5 mb-5">
+            <div className="w-9 h-9 bg-gradient-to-br from-brand-blue to-brand-cyan rounded-xl flex items-center justify-center shadow-lg shadow-brand-blue/20">
+              <Calendar className="text-white w-5 h-5" />
             </div>
-            <span className="text-2xl sm:text-3xl font-bold font-display tracking-tighter">Agendei<span className="text-brand-blue">.me</span></span>
+            <span className="text-xl font-bold font-display tracking-tighter">Agendei<span className="text-brand-blue">.me</span></span>
           </div>
-          <p className="text-white/40 text-lg sm:text-xl max-w-sm mb-8 sm:mb-10 leading-relaxed">
-            A plataforma definitiva para profissionais que buscam excelência, organização e escala.
+          <p className="text-white/30 text-sm max-w-xs mb-6 leading-relaxed">
+            A plataforma de agendamento mais simples e eficiente para profissionais autônomos do Brasil.
           </p>
-          <div className="flex items-center gap-4 sm:gap-6">
-            <div className="flex items-center gap-3 px-4 sm:px-6 py-2 sm:py-3 bg-white/5 rounded-2xl border border-white/10">
-              <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" />
-              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em]">Dados Protegidos (LGPD)</span>
-            </div>
+          <div className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.04] rounded-xl border border-white/[0.07] w-fit">
+            <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">Dados Protegidos — LGPD</span>
           </div>
         </div>
         
         <div className="md:col-span-2">
-          <h4 className="font-bold text-white mb-6 sm:mb-8 uppercase tracking-widest text-xs sm:text-sm">Plataforma</h4>
-          <ul className="space-y-4 sm:space-y-6 text-white/40 text-base sm:text-lg">
-            <li><a href="#como-funciona" className="hover:text-brand-blue transition-colors">Como funciona</a></li>
-            <li><a href="#precos" className="hover:text-brand-blue transition-colors">Preços</a></li>
-            <li><a href="#faq" className="hover:text-brand-blue transition-colors">Dúvidas</a></li>
+          <h4 className="font-bold text-white/40 mb-5 uppercase tracking-widest text-[10px]">Plataforma</h4>
+          <ul className="space-y-4 text-white/30 text-sm">
+            <li><a href="#como-funciona" className="hover:text-white transition-colors">Como funciona</a></li>
+            <li><a href="#precos" className="hover:text-white transition-colors">Preços</a></li>
+            <li><a href="#depoimentos" className="hover:text-white transition-colors">Depoimentos</a></li>
+            <li><a href="#faq" className="hover:text-white transition-colors">FAQ</a></li>
           </ul>
         </div>
 
         <div className="md:col-span-2">
-          <h4 className="font-bold text-white mb-6 sm:mb-8 uppercase tracking-widest text-xs sm:text-sm">Suporte</h4>
-          <ul className="space-y-4 sm:space-y-6 text-white/40 text-base sm:text-lg">
-            <li><a href="#" className="hover:text-brand-blue transition-colors">Central de Ajuda</a></li>
-            <li><a href="#" className="hover:text-brand-blue transition-colors">Privacidade</a></li>
-            <li><a href="#" className="hover:text-brand-blue transition-colors">Termos</a></li>
+          <h4 className="font-bold text-white/40 mb-5 uppercase tracking-widest text-[10px]">Legal</h4>
+          <ul className="space-y-4 text-white/30 text-sm">
+            <li><a href="#" className="hover:text-white transition-colors">Privacidade</a></li>
+            <li><a href="#" className="hover:text-white transition-colors">Termos de Uso</a></li>
+            <li><a href="#" className="hover:text-white transition-colors">Central de Ajuda</a></li>
           </ul>
         </div>
 
         <div className="md:col-span-3">
-          <h4 className="font-bold text-white mb-6 sm:mb-8 uppercase tracking-widest text-xs sm:text-sm">Conecte-se</h4>
-          <div className="flex gap-4 sm:gap-6">
-            <a href="#" className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-brand-blue transition-all border border-white/10">
-              <Instagram className="w-5 h-5 sm:w-6 sm:h-6" />
+          <h4 className="font-bold text-white/40 mb-5 uppercase tracking-widest text-[10px]">Redes</h4>
+          <div className="flex gap-3">
+            <a href="#" className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center hover:bg-brand-blue/20 hover:border-brand-blue/30 transition-all text-white/40 hover:text-white">
+              <Instagram className="w-4 h-4" />
             </a>
-            <a href="#" className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-brand-blue transition-all border border-white/10">
-              <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6" />
+            <a href="#" className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center hover:bg-brand-blue/20 hover:border-brand-blue/30 transition-all text-white/40 hover:text-white">
+              <MessageCircle className="w-4 h-4" />
             </a>
           </div>
         </div>
       </div>
       
-      <div className="pt-8 sm:pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 sm:gap-8 text-white/20 text-xs sm:text-sm text-center md:text-left">
-        <p>© 2026 Agendei.me. Todos os direitos reservados.</p>
-        <div className="flex items-center gap-4">
-          <Lock className="w-4 h-4" />
+      <div className="pt-8 border-t border-white/[0.05] flex flex-col md:flex-row justify-between items-center gap-4 text-white/20 text-xs text-center md:text-left">
+        <p>© 2026 Agendei.me — Todos os direitos reservados.</p>
+        <div className="flex items-center gap-3">
+          <Lock className="w-3.5 h-3.5" />
           <span>Pagamento 100% Seguro</span>
         </div>
       </div>
     </div>
-    
-    {/* Decorative Footer Gradient */}
-    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-1/2 bg-gradient-to-t from-brand-blue/10 to-transparent -z-10"></div>
+    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] bg-brand-blue/5 rounded-full blur-3xl -z-10"></div>
   </footer>
 );
 
@@ -2562,10 +2974,13 @@ export default function App() {
         <BackgroundAnimation />
         <Navbar onLogin={() => { setAuthMode('login'); setView('auth'); }} />
         <Hero onStart={() => { setAuthMode('register'); setView('auth'); }} />
+        <StatsBar />
         <Problem />
         <Pillars />
+        <Testimonials />
         <Pricing onSelect={() => { setAuthMode('register'); setView('auth'); }} />
         <FAQ />
+        <BottomCTA onSelect={() => { setAuthMode('register'); setView('auth'); }} />
         <Footer />
       </div>
     </div>
