@@ -1,0 +1,20 @@
+Aja como um desenvolvedor full-stack sênior e crie a estrutura de um banco de dados PostgreSQL persistente para o meu aplicativo de barbearia
+. Este banco deve ser o núcleo do sistema, gerenciando desde o login dos barbeiros até a lógica de permissões entre o plano gratuito e o plano Pro de R$ 49,90. Certifique-se de que a estrutura seja escalável e suporte as cinco abas principais que já definimos: Dashboard, Agendamentos, Clientes, Site (link na bio) e Ajustes.
+A primeira tabela essencial é a de usuarios (barbeiros). Ela deve conter campos para ID único, nome da barbearia, e-mail e senha (para autenticação)
+. É crucial adicionar as colunas data_criacao (para controlar o período de teste de 7 dias) e status_assinatura, que deve aceitar valores como 'teste' ou 'pago'
+. Sem esses campos, o sistema não conseguirá identificar quem deve ser bloqueado após o vencimento do trial.
+Crie uma tabela de agendamentos vinculada ao ID do usuário (barbeiro). Os campos devem incluir nome do cliente, serviço escolhido, data, horário e status (pendente, concluído ou cancelado)
+. Esta tabela deve receber dados tanto do painel interno do barbeiro quanto do link público de agendamento (o site para o cliente final), garantindo que todos os horários fiquem centralizados em um só lugar
+.
+A tabela de servicos é onde aplicaremos a trava do plano gratuito que discutimos. Ela deve armazenar o nome do serviço, preço e duração. No código de back-end, implemente uma lógica que consulte esta tabela: se o barbeiro estiver no status 'teste', ele só poderá cadastrar no máximo dois serviços
+. Essa limitação é o que incentivará o upgrade para o plano ilimitado de R$ 49,90.
+Desenvolva a tabela de clientes para a aba de gestão de contatos. Ela deve salvar o nome, o número do WhatsApp e o histórico de cortes de cada pessoa
+. No front-end, essa tabela alimentará o ícone de ação do WhatsApp que criará o link wa.me, permitindo que o barbeiro entre em contato com o cliente com apenas um clique, conforme planejado nas nossas conversas anteriores.
+Para as funções avançadas de faturamento e equipe, crie tabelas de transacoes e equipe. A tabela de transações deve registrar todas as entradas financeiras para alimentar o Dashboard
+. Já a tabela de equipe permitirá que o barbeiro adicione outros profissionais. Lembre-se de configurar o sistema para que o acesso total a essas tabelas e aos cálculos de comissão seja restrito apenas aos usuários com status_assinatura igual a 'pago'.
+Toda a comunicação entre a interface do app e este banco de dados deve ser feita via API
+. O back-end deve ser responsável por processar os pedidos do usuário, verificar se ele ainda está dentro do período de 7 dias ou se já atingiu o limite de serviços, e só então autorizar a gravação ou leitura dos dados no banco
+. Isso garante a segurança e evita que o barbeiro contorne as limitações do sistema.
+Por fim, gere os scripts de criação de tabelas, conhecidos como migrations
+. Se eu estiver usando o Supabase, forneça o código SQL completo para que eu possa colar no editor de SQL; se estiver no Replit, configure os esquemas diretamente no ambiente de banco de dados deles
+. O objetivo final é que, ao rodar esse banco, meu app passe a salvar agendamentos reais e bloqueie o acesso às abas de Dashboard e Clientes assim que o período de 7 dias expirar.

@@ -46,3 +46,8 @@ deploymentTarget = "static"
 run = ["node", "--import", "tsx", "server.ts"]
 build = ["npm", "run", "build"]
 publicDir = "dist"
+
+[userenv]
+
+[userenv.shared]
+JWT_SECRET = "agendei_hr6dfk40vbt_wesn0wktps9"
