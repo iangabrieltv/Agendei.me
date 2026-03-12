@@ -35,4 +35,30 @@ async function startServer() {
   });
 }
 
+async function startPreviewServer() {
+  const preview = express();
+  const PREVIEW_PORT = 3001;
+
+  preview.use((req, res, next) => {
+    res.setHeader('X-Frame-Options', 'ALLOWALL');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    next();
+  });
+
+  preview.use(express.static(path.join(__dirname, "dist"), {
+    setHeaders: (res) => {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  }));
+
+  preview.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "dist", "index.html"));
+  });
+
+  preview.listen(PREVIEW_PORT, "0.0.0.0", () => {
+    console.log(`Preview server running on http://localhost:${PREVIEW_PORT}`);
+  });
+}
+
 startServer();
+startPreviewServer();
