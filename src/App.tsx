@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import * as api from './lib/api';
 import { 
   Check, 
   X, 
@@ -1046,39 +1047,14 @@ const AuthPage = ({ onBack, onSuccess, initialMode = 'login' }: {
     setIsLoading(true);
 
     try {
-      const users = JSON.parse(localStorage.getItem('agendei_users') || '{}');
-      
       if (isRegistering) {
-        if (users[formData.email]) {
-          throw new Error('E-mail já cadastrado');
-        }
-        
-        const newUser = {
-          id: Date.now().toString(),
-          email: formData.email,
-          name: formData.name,
-          password: formData.password,
-          onboarded: false
-        };
-        
-        users[formData.email] = newUser;
-        localStorage.setItem('agendei_users', JSON.stringify(users));
-        
+        const { user } = await api.register(formData.email, formData.password, formData.name);
         setSuccess(true);
-        setTimeout(() => {
-          onSuccess(newUser);
-        }, 2000);
+        setTimeout(() => onSuccess(user), 1500);
       } else {
-        const user = Object.values(users).find((u: any) => u.email === formData.identifier && u.password === formData.password);
-        
-        if (!user) {
-          throw new Error('E-mail ou senha incorretos');
-        }
-        
+        const { user } = await api.login(formData.identifier, formData.password);
         setSuccess(true);
-        setTimeout(() => {
-          onSuccess(user);
-        }, 500);
+        setTimeout(() => onSuccess(user), 500);
       }
     } catch (err: any) {
       setError(err.message || 'Erro na autenticação');
@@ -2841,36 +2817,49 @@ export default function App() {
     schedule: null
   });
 
-  const fetchDashboardData = async (userId: string) => {
+  const fetchDashboardData = async (_userId?: string) => {
     try {
-      // Fetch profile from localStorage
-      const profiles = JSON.parse(localStorage.getItem('agendei_profiles') || '{}');
-      const profile = profiles[userId];
+      const [perfil, servicosData, agendamentosData] = await Promise.all([
+        api.getPerfil(),
+        api.getServicos(),
+        api.getAgendamentos()
+      ]);
 
-      if (profile) {
-        setUserData({
-          id: profile.user_id,
-          email: user?.email || '',
-          name: profile.name,
-          establishmentName: profile.establishment_name,
-          profilePic: profile.profile_pic,
-          banner: profile.banner || '',
-          theme: profile.theme || 'dark',
-          buttonColor: profile.button_color || '#3b82f6',
-          bioEmail: profile.bio_email || '',
-          bioWhatsapp: profile.bio_whatsapp || '',
-          instagram: profile.instagram || '',
-          schedule: profile.schedule
-        });
-      }
+      setUserData({
+        id: String(perfil.id),
+        email: perfil.email || '',
+        name: perfil.nome_barbearia,
+        establishmentName: perfil.nome_barbearia,
+        profilePic: perfil.avatar_url || '',
+        banner: '',
+        theme: 'dark',
+        buttonColor: perfil.cor_tema || '#3b82f6',
+        bioEmail: perfil.email || '',
+        bioWhatsapp: perfil.whatsapp || '',
+        instagram: '',
+        schedule: perfil.horarios
+      });
 
-      // Fetch services
-      const allServices = JSON.parse(localStorage.getItem('agendei_services') || '{}');
-      setServices(allServices[userId] || []);
+      setServices(servicosData.map((s: api.Servico) => ({
+        id: String(s.id),
+        userId: String(s.usuario_id),
+        name: s.nome,
+        price: s.preco,
+        duration: s.duracao_minutos,
+        description: s.descricao || ''
+      })));
 
-      // Fetch appointments
-      const allAppointments = JSON.parse(localStorage.getItem('agendei_appointments') || '{}');
-      setAppointments(allAppointments[userId] || []);
+      setAppointments(agendamentosData.map((a: api.Agendamento) => ({
+        id: String(a.id),
+        userId: String(a.usuario_id),
+        clientName: a.cliente_nome,
+        clientPhone: a.cliente_whatsapp || '',
+        clientPhoto: '',
+        serviceId: a.servico_id ? String(a.servico_id) : '',
+        time: a.horario ? a.horario.slice(0, 5) : '',
+        date: a.data,
+        status: a.status === 'concluido' ? 'Concluído' : a.status === 'cancelado' ? 'Cancelado' : 'Marcado'
+      })));
     } catch (err) {
       console.error(err);
     }
@@ -2878,17 +2867,19 @@ export default function App() {
 
   useEffect(() => {
     const checkSession = async () => {
-      const sessionUser = JSON.parse(localStorage.getItem('agendei_session') || 'null');
-      if (sessionUser) {
-        setUser(sessionUser);
-        
-        const profiles = JSON.parse(localStorage.getItem('agendei_profiles') || '{}');
-        if (profiles[sessionUser.id]) {
+      const session = api.getSession();
+      if (!session) return;
+      try {
+        const me = await api.getMe();
+        setUser(me);
+        if (me.onboarded) {
           setView('dashboard');
-          fetchDashboardData(sessionUser.id);
+          fetchDashboardData();
         } else {
           setView('onboarding');
         }
+      } catch {
+        api.logout();
       }
     };
     checkSession();
