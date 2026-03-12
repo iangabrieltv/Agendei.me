@@ -75,6 +75,7 @@ export interface Perfil {
   avatar_url: string;
   bio: string;
   endereco: string;
+  instagram: string;
   status_assinatura: string;
   horarios: HorarioFuncionamento[];
 }
@@ -85,6 +86,10 @@ export async function getPerfil(): Promise<Perfil> {
 
 export async function updatePerfil(data: Partial<{ nomeBarbearia: string; whatsapp: string; corTema: string; avatarUrl: string; bio: string; endereco: string; instagram: string }>) {
   return req("PUT", "/api/perfil", data);
+}
+
+export async function updateHorarios(horarios: HorarioFuncionamento[]) {
+  return req("PUT", "/api/horarios", { horarios });
 }
 
 export async function completeOnboarding(data: {

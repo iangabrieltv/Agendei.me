@@ -122,7 +122,20 @@ async function startServer() {
       if (result.rows.length === 0) return res.status(404).json({ error: "Usuário não encontrado" });
       const horarios = await pool.query("SELECT id FROM horarios_funcionamento WHERE usuario_id = $1 LIMIT 1", [req.userId]);
       const user = result.rows[0];
-      res.json({ ...user, onboarded: horarios.rows.length > 0 });
+      // Check if trial expired
+      let status = user.status_assinatura;
+      if (status === "teste" && user.data_expiracao_trial && new Date() > new Date(user.data_expiracao_trial)) {
+        await pool.query("UPDATE usuarios SET status_assinatura = 'expirado' WHERE id = $1", [req.userId]);
+        status = "expirado";
+      }
+      res.json({
+        id: user.id,
+        email: user.email,
+        nomeBarbearia: user.nome_barbearia,
+        status,
+        trialExpira: user.data_expiracao_trial,
+        onboarded: horarios.rows.length > 0
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -133,7 +146,7 @@ async function startServer() {
   app.get("/api/perfil", authMiddleware, async (req: AuthReq, res) => {
     try {
       const result = await pool.query(
-        "SELECT id, email, nome_barbearia, whatsapp, cor_tema, avatar_url, bio, endereco, status_assinatura FROM usuarios WHERE id = $1",
+        "SELECT id, email, nome_barbearia, whatsapp, cor_tema, avatar_url, bio, endereco, instagram, status_assinatura FROM usuarios WHERE id = $1",
         [req.userId]
       );
       const horarios = await pool.query(
@@ -150,12 +163,34 @@ async function startServer() {
     const { nomeBarbearia, whatsapp, corTema, avatarUrl, bio, endereco, instagram } = req.body;
     try {
       await pool.query(
-        "UPDATE usuarios SET nome_barbearia = COALESCE($1, nome_barbearia), whatsapp = COALESCE($2, whatsapp), cor_tema = COALESCE($3, cor_tema), avatar_url = COALESCE($4, avatar_url), bio = COALESCE($5, bio), endereco = COALESCE($6, endereco), updated_at = NOW() WHERE id = $7",
-        [nomeBarbearia, whatsapp, corTema, avatarUrl, bio, endereco, req.userId]
+        "UPDATE usuarios SET nome_barbearia = COALESCE($1, nome_barbearia), whatsapp = COALESCE($2, whatsapp), cor_tema = COALESCE($3, cor_tema), avatar_url = COALESCE($4, avatar_url), bio = COALESCE($5, bio), endereco = COALESCE($6, endereco), instagram = COALESCE($7, instagram), updated_at = NOW() WHERE id = $8",
+        [nomeBarbearia, whatsapp, corTema, avatarUrl, bio, endereco, instagram, req.userId]
       );
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.put("/api/horarios", authMiddleware, async (req: AuthReq, res) => {
+    const { horarios } = req.body;
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("DELETE FROM horarios_funcionamento WHERE usuario_id = $1", [req.userId]);
+      for (const h of horarios) {
+        await client.query(
+          "INSERT INTO horarios_funcionamento (usuario_id, dia_semana, aberto, hora_inicio, hora_fim) VALUES ($1, $2, $3, $4, $5)",
+          [req.userId, h.dia_semana, h.aberto, h.hora_inicio || "09:00", h.hora_fim || "18:00"]
+        );
+      }
+      await client.query("COMMIT");
+      res.json({ success: true });
+    } catch (err: any) {
+      await client.query("ROLLBACK");
+      res.status(500).json({ error: err.message });
+    } finally {
+      client.release();
     }
   });
 

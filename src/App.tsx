@@ -1279,7 +1279,8 @@ const Dashboard = ({
   setAppointments,
   setServices,
   setUserData,
-  userId
+  userId,
+  userStatus
 }: { 
   onLogout: () => void, 
   userData: { 
@@ -1298,7 +1299,8 @@ const Dashboard = ({
   setAppointments: React.Dispatch<React.SetStateAction<Appointment[]>>,
   setServices: React.Dispatch<React.SetStateAction<Service[]>>,
   setUserData: React.Dispatch<React.SetStateAction<any>>,
-  userId: string
+  userId: string,
+  userStatus: string
 }) => {
   const [activeTab, setActiveTab] = useState<'home' | 'agenda' | 'clientes' | 'site' | 'configuracoes'>('home');
   const [isAddingAppointment, setIsAddingAppointment] = useState(false);
@@ -1331,12 +1333,8 @@ const Dashboard = ({
 
   const handleUpdateStatus = async (id: string, status: Appointment['status']) => {
     try {
-      const allAppointments = JSON.parse(localStorage.getItem('agendei_appointments') || '{}');
-      const userApps = allAppointments[userId] || [];
-      const updatedApps = userApps.map((app: any) => app.id === id ? { ...app, status } : app);
-      allAppointments[userId] = updatedApps;
-      localStorage.setItem('agendei_appointments', JSON.stringify(allAppointments));
-      
+      const statusMap: any = { 'Finalizado': 'concluido', 'Cancelado': 'cancelado', 'Marcado': 'confirmado', 'Presente': 'confirmado', 'Em Espera': 'pendente', 'Atrasado': 'confirmado' };
+      await api.updateAgendamentoStatus(Number(id), statusMap[status] || 'confirmado');
       setAppointments(prev => prev.map(app => app.id === id ? { ...app, status } : app));
     } catch (err) {
       console.error(err);
@@ -1345,12 +1343,7 @@ const Dashboard = ({
 
   const handleDeleteAppointment = async (id: string) => {
     try {
-      const allAppointments = JSON.parse(localStorage.getItem('agendei_appointments') || '{}');
-      const userApps = allAppointments[userId] || [];
-      const updatedApps = userApps.filter((app: any) => app.id !== id);
-      allAppointments[userId] = updatedApps;
-      localStorage.setItem('agendei_appointments', JSON.stringify(allAppointments));
-      
+      await api.deleteAgendamento(Number(id));
       setAppointments(prev => prev.filter(app => app.id !== id));
     } catch (err) {
       console.error(err);
@@ -1358,32 +1351,66 @@ const Dashboard = ({
   };
 
   const handleAddAppointment = async (data: { clientName: string, clientPhone: string, clientPhoto: string, serviceId: string, time: string, date: string }) => {
-    const newApp: Appointment = {
-      id: Date.now().toString(),
-      userId: userId,
-      clientName: data.clientName,
-      clientPhone: data.clientPhone,
-      clientPhoto: data.clientPhoto,
-      serviceId: data.serviceId,
-      time: data.time,
-      date: data.date,
-      status: 'Marcado'
-    };
-
     try {
-      const allAppointments = JSON.parse(localStorage.getItem('agendei_appointments') || '{}');
-      const userApps = allAppointments[userId] || [];
-      const updatedApps = [...userApps, newApp];
-      allAppointments[userId] = updatedApps;
-      localStorage.setItem('agendei_appointments', JSON.stringify(allAppointments));
-      
+      const service = services.find(s => s.id === data.serviceId);
+      const result = await api.createAgendamento({
+        clienteNome: data.clientName,
+        clienteWhatsapp: data.clientPhone || undefined,
+        servicoId: data.serviceId ? Number(data.serviceId) : undefined,
+        servicoNome: service?.name,
+        servicoPreco: service?.price,
+        data: data.date,
+        horario: data.time
+      });
+      const newApp: Appointment = {
+        id: String(result.id),
+        userId,
+        clientName: result.cliente_nome,
+        clientPhone: result.cliente_whatsapp || '',
+        clientPhoto: '',
+        serviceId: result.servico_id ? String(result.servico_id) : data.serviceId,
+        time: result.horario?.slice(0, 5) || data.time,
+        date: result.data,
+        status: 'Marcado'
+      };
       setAppointments(prev => [...prev, newApp]);
       setIsAddingAppointment(false);
       setSelectedTime(null);
-    } catch (err) {
+    } catch (err: any) {
+      alert('Erro ao salvar agendamento: ' + (err.message || 'Tente novamente.'));
       console.error(err);
     }
   };
+
+  if (userStatus === 'expirado') {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center p-6">
+        <div className="w-full max-w-md text-center space-y-8">
+          <div className="w-20 h-20 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto">
+            <AlertCircle className="w-10 h-10 text-red-500" />
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold text-white mb-3">Período de Teste Encerrado</h2>
+            <p className="text-white/50 leading-relaxed">Seu trial de 7 dias expirou. Assine o plano Pro por <span className="text-brand-blue font-bold">R$ 49,90/mês</span> para continuar usando o Agendei.me sem limites.</p>
+          </div>
+          <div className="glass-card-dashboard p-6 text-left space-y-3">
+            {['Agendamentos ilimitados', 'Gestão de clientes', 'Relatórios e transações', 'Gestão de equipe', 'Suporte prioritário'].map(f => (
+              <div key={f} className="flex items-center gap-3 text-white/70">
+                <div className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center flex-shrink-0">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                </div>
+                <span className="text-sm">{f}</span>
+              </div>
+            ))}
+          </div>
+          <button className="w-full blue-gradient-btn py-5 rounded-2xl font-bold text-lg shadow-xl shadow-brand-blue/20">
+            Assinar Plano Pro — R$ 49,90/mês
+          </button>
+          <button onClick={onLogout} className="text-white/30 text-sm hover:text-white/60 transition-colors">Sair da conta</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#050505] flex justify-center overflow-x-hidden selection:bg-brand-blue selection:text-white">
@@ -1982,43 +2009,32 @@ const Onboarding = ({ onComplete, userId }: { onComplete: (data: { id: string, n
       } else {
         setIsProcessing(true);
         try {
-          // Save profile to localStorage
-          const profiles = JSON.parse(localStorage.getItem('agendei_profiles') || '{}');
-          const newProfile = {
-            user_id: userId,
-            name: formData.name,
-            establishment_name: formData.establishmentName,
-            profile_pic: formData.profilePic || 'https://i.pravatar.cc/100?img=11',
-            bio_whatsapp: formData.whatsapp,
-            schedule: formData.schedule,
-            theme: 'dark',
-            button_color: '#3b82f6'
-          };
-          profiles[userId] = newProfile;
-          localStorage.setItem('agendei_profiles', JSON.stringify(profiles));
+          const diasMap: any = { seg: 1, ter: 2, qua: 3, qui: 4, sex: 5, sab: 6, dom: 0 };
+          const horarios = Object.entries(formData.schedule).map(([key, val]: [string, any]) => ({
+            dia_semana: diasMap[key],
+            aberto: val.open,
+            hora_inicio: val.start,
+            hora_fim: val.end
+          }));
 
-          // Save services to localStorage
-          const allServices = JSON.parse(localStorage.getItem('agendei_services') || '{}');
-          allServices[userId] = formData.services;
-          localStorage.setItem('agendei_services', JSON.stringify(allServices));
-
-          // Update user onboarded status
-          const users = JSON.parse(localStorage.getItem('agendei_users') || '{}');
-          const userKey = Object.keys(users).find(k => users[k].id === userId);
-          if (userKey) {
-            users[userKey].onboarded = true;
-            localStorage.setItem('agendei_users', JSON.stringify(users));
-          }
+          await api.completeOnboarding({
+            nomeBarbearia: formData.establishmentName,
+            whatsapp: formData.whatsapp,
+            avatarUrl: formData.profilePic || undefined,
+            servicos: formData.services.map((s: any) => ({ nome: s.name, preco: s.price, duracao: s.time })),
+            horarios
+          });
 
           onComplete({
             id: userId,
-            name: formData.name,
+            name: formData.establishmentName,
             establishmentName: formData.establishmentName,
-            profilePic: formData.profilePic || 'https://i.pravatar.cc/100?img=11',
+            profilePic: formData.profilePic || '',
             services: formData.services,
             schedule: formData.schedule
           });
-        } catch (err) {
+        } catch (err: any) {
+          alert('Erro ao salvar: ' + (err.message || 'Tente novamente.'));
           console.error(err);
         } finally {
           setIsProcessing(false);
@@ -2379,10 +2395,7 @@ const Skeleton = ({ className }: { className?: string }) => (
 );
 
 const LinkBio = ({ userId }: { userId: string }) => {
-  const [data, setData] = useState<any>(() => {
-    const cached = localStorage.getItem(`agendei_bio_cache_${userId}`);
-    return cached ? JSON.parse(cached) : null;
-  });
+  const [data, setData] = useState<any>(null);
   const [isRefreshing, setIsRefreshing] = useState(true);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -2393,42 +2406,30 @@ const LinkBio = ({ userId }: { userId: string }) => {
   useEffect(() => {
     const fetchBio = async () => {
       try {
-        // Fetch profile from localStorage
-        const profiles = JSON.parse(localStorage.getItem('agendei_profiles') || '{}');
-        const profile = profiles[userId];
-        
-        if (!profile) throw new Error('Perfil não encontrado');
-
-        // Fetch services from localStorage
-        const allServices = JSON.parse(localStorage.getItem('agendei_services') || '{}');
-        const servicesData = allServices[userId] || [];
-
-        const json = { 
+        const result = await api.getPublicProfile(userId);
+        const perfil = result.perfil;
+        const json = {
           user: {
-            ...profile,
-            establishmentName: profile.establishment_name,
-            profilePic: profile.profile_pic,
-            buttonColor: profile.button_color,
-            bioWhatsapp: profile.bio_whatsapp,
-            bioEmail: profile.bio_email
-          }, 
-          services: servicesData 
+            id: perfil.id,
+            establishmentName: perfil.nome_barbearia,
+            profilePic: perfil.avatar_url || '',
+            buttonColor: perfil.cor_tema || '#3b82f6',
+            bioWhatsapp: perfil.whatsapp || '',
+            bioEmail: perfil.email || '',
+            instagram: perfil.instagram || '',
+            bio: perfil.bio || '',
+            endereco: perfil.endereco || ''
+          },
+          services: result.servicos.map((s: api.Servico) => ({
+            id: String(s.id),
+            name: s.nome,
+            price: s.preco,
+            time: s.duracao_minutos,
+            description: s.descricao || ''
+          })),
+          horarios: result.horarios
         };
-        
-        if (json.user) {
-          setData(json);
-          localStorage.setItem(`agendei_bio_cache_${userId}`, JSON.stringify(json));
-        }
-        
-        const saved = localStorage.getItem(`agendei_my_apps_${userId}`);
-        if (saved) {
-          const ids = JSON.parse(saved);
-          const allAppointments = JSON.parse(localStorage.getItem('agendei_appointments') || '{}');
-          const userApps = allAppointments[userId] || [];
-          const apps = userApps.filter((a: any) => ids.includes(a.id));
-          
-          setMyAppointments(apps);
-        }
+        setData(json);
       } catch (err) {
         console.error(err);
       } finally {
@@ -2441,51 +2442,36 @@ const LinkBio = ({ userId }: { userId: string }) => {
   const handleBook = async () => {
     if (!selectedService || !selectedTime || !clientInfo.name || !clientInfo.phone) return;
 
-    const newApp: Appointment = {
-      id: Date.now().toString(),
-      userId: userId,
-      clientName: clientInfo.name,
-      clientPhone: clientInfo.phone,
-      clientPhoto: '',
-      serviceId: selectedService.id,
-      time: selectedTime,
-      date: selectedDate,
-      status: 'Marcado'
-    };
-
     try {
-      const allAppointments = JSON.parse(localStorage.getItem('agendei_appointments') || '{}');
-      const userApps = allAppointments[userId] || [];
-      allAppointments[userId] = [...userApps, newApp];
-      localStorage.setItem('agendei_appointments', JSON.stringify(allAppointments));
-      
-      const saved = JSON.parse(localStorage.getItem(`agendei_my_apps_${userId}`) || '[]');
-      localStorage.setItem(`agendei_my_apps_${userId}`, JSON.stringify([...saved, newApp.id]));
-      
+      await api.criarAgendamentoPublico(userId, {
+        clienteNome: clientInfo.name,
+        clienteWhatsapp: clientInfo.phone,
+        servicoId: Number(selectedService.id),
+        data: selectedDate,
+        horario: selectedTime
+      });
+      const newApp: Appointment = {
+        id: Date.now().toString(),
+        userId: userId,
+        clientName: clientInfo.name,
+        clientPhone: clientInfo.phone,
+        clientPhoto: '',
+        serviceId: selectedService.id,
+        time: selectedTime,
+        date: selectedDate,
+        status: 'Marcado'
+      };
       setMyAppointments(prev => [...prev, newApp]);
       setSelectedService(null);
       setSelectedTime(null);
       alert('Agendamento realizado com sucesso!');
-    } catch (err) {
-      alert('Erro ao agendar');
+    } catch (err: any) {
+      alert('Erro ao agendar: ' + (err.message || 'Tente novamente.'));
     }
   };
 
-  const handleCancel = async (appId: string) => {
-    if (confirm('Deseja realmente cancelar seu agendamento?')) {
-      try {
-        const allAppointments = JSON.parse(localStorage.getItem('agendei_appointments') || '{}');
-        const userApps = allAppointments[userId] || [];
-        allAppointments[userId] = userApps.filter((a: any) => a.id !== appId);
-        localStorage.setItem('agendei_appointments', JSON.stringify(allAppointments));
-        
-        setMyAppointments(prev => prev.filter(a => a.id !== appId));
-        const saved = JSON.parse(localStorage.getItem(`agendei_my_apps_${userId}`) || '[]');
-        localStorage.setItem(`agendei_my_apps_${userId}`, JSON.stringify(saved.filter((id: string) => id !== appId)));
-      } catch (err) {
-        alert('Erro ao cancelar');
-      }
-    }
+  const handleCancel = async (_appId: string) => {
+    alert('Para cancelar, entre em contato com o profissional pelo WhatsApp.');
   };
 
   if (!data && isRefreshing) return (
@@ -2836,7 +2822,7 @@ export default function App() {
         buttonColor: perfil.cor_tema || '#3b82f6',
         bioEmail: perfil.email || '',
         bioWhatsapp: perfil.whatsapp || '',
-        instagram: '',
+        instagram: perfil.instagram || '',
         schedule: perfil.horarios
       });
 
@@ -2904,7 +2890,7 @@ export default function App() {
     return (
       <Dashboard 
         onLogout={() => {
-          localStorage.removeItem('agendei_session');
+          api.logout();
           setView('landing');
           setUser(null);
         }} 
@@ -2915,6 +2901,7 @@ export default function App() {
         setServices={setServices}
         setUserData={setUserData}
         userId={user.id}
+        userStatus={user.status || 'teste'}
       />
     );
   }
@@ -2946,11 +2933,9 @@ export default function App() {
         onBack={() => setView('landing')} 
         onSuccess={(loggedUser) => {
           setUser(loggedUser);
-          localStorage.setItem('agendei_session', JSON.stringify(loggedUser));
-          
-          const profiles = JSON.parse(localStorage.getItem('agendei_profiles') || '{}');
-          if (profiles[loggedUser.id]) {
+          if (loggedUser.onboarded) {
             setView('dashboard');
+            fetchDashboardData();
           } else {
             setView('onboarding');
           }
@@ -3078,28 +3063,17 @@ const SiteTab = ({ siteData, setSiteData, userData, setUserData, userId, service
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const profiles = JSON.parse(localStorage.getItem('agendei_profiles') || '{}');
-      const updatedProfile = {
-        user_id: userId,
-        name: userData.name,
-        establishment_name: userData.establishmentName,
-        profile_pic: siteData.profilePic,
-        banner: siteData.banner,
-        theme: siteData.theme,
-        button_color: siteData.buttonColor,
-        bio_email: siteData.bioEmail,
-        bio_whatsapp: siteData.bioWhatsapp,
-        instagram: siteData.instagram,
-        schedule: siteData.schedule
-      };
-      profiles[userId] = updatedProfile;
-      localStorage.setItem('agendei_profiles', JSON.stringify(profiles));
-      
+      await api.updatePerfil({
+        whatsapp: siteData.bioWhatsapp,
+        corTema: siteData.buttonColor,
+        avatarUrl: siteData.profilePic || undefined,
+        instagram: siteData.instagram || undefined
+      });
       setUserData((prev: any) => ({ ...prev, ...siteData }));
       alert('Configurações salvas com sucesso!');
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Erro ao salvar alterações.');
+      alert('Erro ao salvar: ' + (err.message || 'Tente novamente.'));
     } finally {
       setIsSaving(false);
     }
@@ -3121,21 +3095,6 @@ const SiteTab = ({ siteData, setSiteData, userData, setUserData, userId, service
     setTimeout(() => setCopied(false), 2000);
   };
 
-  useEffect(() => {
-    // Prefetch bio data when opening Site tab to speed up public link access
-    const prefetchBio = async () => {
-      try {
-        const res = await fetch(`/api/bio/${userId}`);
-        const json = await res.json();
-        if (json.user) {
-          localStorage.setItem(`agendei_bio_cache_${userId}`, JSON.stringify(json));
-        }
-      } catch (err) {
-        console.error('Prefetch failed', err);
-      }
-    };
-    prefetchBio();
-  }, [userId]);
 
   return (
     <div className="space-y-6 pb-32 px-4">
@@ -3379,30 +3338,46 @@ const ConfiguracoesTab = ({ userData, setUserData, onLogout, services, setServic
   const handleSaveAll = async () => {
     setIsSaving(true);
     try {
-      const response = await fetch('/api/user/site', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: userData.id,
-          ...userData,
-          ...editData,
-          services
-        })
+      await api.updatePerfil({
+        nomeBarbearia: editData.establishmentName || undefined,
+        whatsapp: editData.bioWhatsapp || undefined,
+        avatarUrl: editData.profilePic || undefined,
+        instagram: editData.instagram || undefined
       });
-      
-      if (response.ok) {
-        setUserData((prev: any) => ({
-          ...prev,
-          ...editData
+
+      if (editData.schedule) {
+        const diasMap: any = { seg: 1, ter: 2, qua: 3, qui: 4, sex: 5, sab: 6, dom: 0 };
+        const horarios = Object.entries(editData.schedule).map(([key, val]: [string, any]) => ({
+          dia_semana: diasMap[key],
+          aberto: val.open,
+          hora_inicio: val.start || '09:00',
+          hora_fim: val.end || '18:00'
         }));
-        alert('Configurações salvas com sucesso!');
-        setActiveSubTab(null);
-      } else {
-        alert('Erro ao salvar alterações');
+        await api.updateHorarios(horarios);
       }
-    } catch (err) {
+
+      for (const s of services) {
+        const numId = Number(s.id);
+        if (!isNaN(numId) && numId > 0) {
+          try {
+            await api.updateServico(numId, { nome: s.name, preco: s.price, duracaoMinutos: s.duration || (s as any).time || 30 });
+          } catch {}
+        }
+      }
+
+      setUserData((prev: any) => ({
+        ...prev,
+        establishmentName: editData.establishmentName || prev.establishmentName,
+        bioWhatsapp: editData.bioWhatsapp || prev.bioWhatsapp,
+        profilePic: editData.profilePic || prev.profilePic,
+        instagram: editData.instagram || prev.instagram,
+        schedule: editData.schedule || prev.schedule
+      }));
+      alert('Configurações salvas com sucesso!');
+      setActiveSubTab(null);
+    } catch (err: any) {
       console.error(err);
-      alert('Erro de conexão');
+      alert('Erro ao salvar: ' + (err.message || 'Tente novamente.'));
     } finally {
       setIsSaving(false);
     }
@@ -3656,9 +3631,13 @@ const ConfiguracoesTab = ({ userData, setUserData, onLogout, services, setServic
             <div className="flex items-center justify-between mb-8">
               <h3 className="text-2xl font-bold text-white">Meus Serviços</h3>
               <button 
-                onClick={() => {
-                  const newService: Service = { id: Date.now().toString(), name: 'Novo Serviço', price: 0, time: 30 };
-                  setServices([...services, newService]);
+                onClick={async () => {
+                  try {
+                    const result = await api.createServico({ nome: 'Novo Serviço', preco: 0, duracaoMinutos: 30 });
+                    setServices(prev => [...prev, { id: String(result.id), userId: String(result.usuario_id), name: result.nome, price: result.preco, duration: result.duracao_minutos, description: '' }]);
+                  } catch (err: any) {
+                    alert(err.message || 'Erro ao adicionar serviço.');
+                  }
                 }}
                 className="px-4 py-2 bg-brand-blue/20 text-brand-blue rounded-xl text-xs font-bold uppercase tracking-widest"
               >
@@ -3710,7 +3689,14 @@ const ConfiguracoesTab = ({ userData, setUserData, onLogout, services, setServic
                     </div>
                   </div>
                   <button 
-                    onClick={() => setServices(services.filter((s: any) => s.id !== service.id))}
+                    onClick={async () => {
+                      try {
+                        await api.deleteServico(Number(service.id));
+                        setServices(services.filter((s: any) => s.id !== service.id));
+                      } catch (err: any) {
+                        alert(err.message || 'Erro ao remover serviço.');
+                      }
+                    }}
                     className="p-3 text-white/10 hover:text-red-500 transition-colors bg-white/5 rounded-xl border border-white/10"
                   >
                     <Trash2 className="w-5 h-5" />
